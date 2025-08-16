@@ -30,6 +30,7 @@ def fetch_live_score():
 conn=mysql.connector.connect(**db_config)
 cursor=conn.cursor()
 cursor.execute("create database if not exists sportsdb")
+cursor.execute("use sportsdb")
 cursor.execute("""
 create table if not exists cricket_scores(
     id int AUTO_INCREMENT primary key,
@@ -44,21 +45,23 @@ def store_score(matches):
     for match in matches:
         match_name=match.get("name","unknown")
         status=match.get("status","unknown")
-        score=json.dumps(match.get("score","No score"))
+        score=match.get("score","No score")
+        score_str=json.dumps(score,ensure_ascii=False)
+        score_str=score_str.replace("%","%%")
         timestamp=datetime.now()
         
 
         test_match = matches[0]
-        print("Tuple length:", len((match_name, status, json.dumps(score), timestamp)))
+        print("Tuple length:", len((str(match_name), str(status), score_str, timestamp)))
 
 
 
-        print(f"inserting:({str(match_name)},{str(status)},{str(score)},{timestamp})")
+        print(f"inserting:({str(match_name)},{str(status)},{score_str},{timestamp})")
 
         try:
             cursor.execute("""
-            INSERT INTO cricket_scores(match_name,status,score,fetch_at)
-            values(%S,%S,%S,%s)
+            INSERT INTO cricket_scores(match_name,status,score,fetched_at)
+            values(%s,%s,%s,%s)
             """,(str(match_name),str(status),json.dumps(score),timestamp))
         except Exception as e:
             print("insert error:",e)
